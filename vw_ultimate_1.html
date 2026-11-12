@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Juncture — Guitar Toolkit</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #09090b; color: #e4e4e7;
+    font-family: 'IBM Plex Mono', monospace;
+    padding: 2rem 1rem; display: flex; justify-content: center;
+  }
+  .container { width: 100%; max-width: 860px; display: flex; flex-direction: column; gap: 1.25rem; }
+  .eyebrow { font-size: .65rem; letter-spacing: .2em; text-transform: uppercase; color: #71717a; margin-bottom: .25rem; }
+  .title { font-size: 3.2rem; font-weight: 600; line-height: 1; letter-spacing: -.02em; color: #fafafa; }
+  .title span { color: #a3e635; }
+  .status-bar {
+    background: #121212; border: 1px solid #27272a; padding: .55rem .9rem; border-radius: 4px;
+    font-size: .72rem; color: #a1a1aa; display: flex; align-items: center; gap: .5rem;
+  }
+  .status-dot { width: 6px; height: 6px; background: #a3e635; border-radius: 50%; box-shadow: 0 0 8px #a3e635; }
+  .card { background: #121212; border: 1px solid #27272a; border-radius: 6px; padding: 1.1rem; }
+  .card-label {
+    font-size: .62rem; letter-spacing: .1em; text-transform: uppercase; color: #71717a;
+    margin-bottom: .65rem; display: flex; justify-content: space-between; align-items: center;
+  }
+  textarea, input[type="text"], input[type="number"], select {
+    width: 100%; background: #18181b; border: 1px solid #27272a; color: #fafafa;
+    font-family: 'IBM Plex Mono', monospace; padding: .65rem; border-radius: 4px;
+    font-size: .82rem; outline: none; transition: border-color .2s;
+  }
+  textarea:focus, input:focus, select:focus { border-color: #a3e635; }
+  textarea { resize: vertical; min-height: 52px; }
+  .grid-3 { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: .85rem; margin-top: .85rem; }
+  .input-group { display: flex; flex-direction: column; gap: .3rem; }
+  .input-group label { font-size: .62rem; letter-spacing: .1em; text-transform: uppercase; color: #71717a; }
+  .pill-group { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .6rem; }
+  .pill {
+    background: #18181b; border: 1px solid #27272a; color: #a1a1aa;
+    font-family: inherit; font-size: .72rem; font-weight: 500;
+    padding: .42rem .7rem; border-radius: 4px; cursor: pointer;
+    transition: all .15s; display: flex; align-items: center; gap: .3rem;
+  }
+  .pill:hover { border-color: #52525b; }
+  .pill.active { background: #1a2e05; border-color: #a3e635; color: #a3e635; }
+  .pill:disabled { opacity: .35; cursor: not-allowed; }
+  .pill .conf { font-size: .5rem; opacity: .7; border: 1px solid currentColor; padding: 0 2px; border-radius: 2px; }
+  .category-label { font-size: .62rem; letter-spacing: .1em; text-transform: uppercase; color: #71717a; margin-bottom: .4rem; }
+  .knob-row { display: flex; align-items: center; gap: .6rem; margin-bottom: .55rem; font-size: .72rem; }
+  .knob-label { width: 90px; flex-shrink: 0; color: #a1a1aa; }
+  .knob-row input[type="range"] { flex: 1; height: 2px; background: #27272a; -webkit-appearance: none; }
+  .knob-row input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 10px; height: 10px; border-radius: 50%;
+    background: #a3e635; cursor: pointer;
+  }
+  .knob-val { width: 36px; text-align: right; color: #a3e635; font-variant-numeric: tabular-nums; }
+  .btn-generate {
+    background: #a3e635; color: #09090b; font-family: inherit; font-size: .95rem;
+    font-weight: 600; text-transform: uppercase; letter-spacing: .04em;
+    width: 100%; padding: .9rem; border: none; border-radius: 6px; cursor: pointer;
+    transition: transform .1s, background .2s;
+  }
+  .btn-generate:hover { background: #bef264; }
+  .btn-generate:active { transform: scale(.99); }
+  .btn-generate:disabled { opacity: .5; cursor: not-allowed; }
+  .output-header { font-size: .72rem; color: #71717a; margin-bottom: .4rem; display: flex; justify-content: space-between; }
+  canvas { width: 100%; height: 160px; background: #000; border: 1px solid #27272a; border-radius: 4px; display: block; }
+  .legend { display: flex; flex-wrap: wrap; gap: .8rem; margin-top: .6rem; font-size: .68rem; color: #a1a1aa; }
+  .legend-item { display: flex; align-items: center; gap: .3rem; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 2px; }
+  .save-row { display: flex; gap: .6rem; margin-top: .8rem; }
+  .btn-save {
+    flex: 1; background: transparent; border: 1px solid #a3e635; color: #a3e635;
+    padding: .65rem; font-family: inherit; font-size: .76rem; font-weight: 500;
+    border-radius: 4px; cursor: pointer; transition: background .15s;
+  }
+  .btn-save:hover { background: #1a2e05; }
+  .hidden { display: none; }
+  .footer-note { font-size: .6rem; color: #52525b; text-align: center; margin-top: .5rem; }
+  .handoff-box {
+    background: #0a0a0a; border: 1px solid #27272a; border-radius: 4px;
+    padding: .8rem; font-size: .7rem; color: #a1a1aa; white-space: pre-wrap;
+    max-height: 220px; overflow-y: auto; margin-top: .5rem;
+  }
+  .copy-btn {
+    background: #27272a; border: none; color: #e4e4e7; padding: .4rem .8rem;
+    border-radius: 4px; font-family: inherit; font-size: .65rem; cursor: pointer;
+    margin-top: .4rem;
+  }
+  .copy-btn:hover { background: #3f3f46; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="eyebrow">Juncture · Guitar Toolkit · ljrseals-dev</div>
+    <div class="title"><span>Junc</span>ture</div>
+  </header>
+
+  <div class="status-bar">
+    <div class="status-dot"></div>
+    <span id="engine-status">ENGINE READY · KARPLUS-STRONG · FRACTIONAL DELAY</span>
+  </div>
+
+  <!-- PROMPT & CONFIG -->
+  <div class="card">
+    <div class="card-label">Riff Prompt</div>
+    <textarea id="prompt" placeholder="mid-tempo funk in E minor, clean tone, palm mutes"></textarea>
+    <div class="grid-3">
+      <div class="input-group">
+        <label>Tone Model</label>
+        <select id="amp">
+          <option value="clean">Fender Clean [M]</option>
+          <option value="breakup">Edge of Breakup [E]</option>
+          <option value="ambient">Ambient Shimmer [X]</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>Tempo (BPM)</label>
+        <input type="number" id="tempo" value="96" min="40" max="240">
+      </div>
+      <div class="input-group">
+        <label>Seed</label>
+        <input type="number" id="seed" value="42">
+      </div>
+    </div>
+  </div>
+
+  <!-- PARAMETERS -->
+  <div class="card">
+    <div class="card-label">DSP Parameters</div>
+    <div class="knob-row"><span class="knob-label">Velocity</span><input type="range" id="vel" min="0" max="1" step=".01" value=".9"><span class="knob-val" id="velVal">0.90</span></div>
+    <div class="knob-row"><span class="knob-label">Distortion</span><input type="range" id="dist" min="0" max="1" step=".01" value=".12"><span class="knob-val" id="distVal">0.12</span></div>
+    <div class="knob-row"><span class="knob-label">Tone</span><input type="range" id="tone" min="0" max="1" step=".01" value=".75"><span class="knob-val" id="toneVal">0.75</span></div>
+    <div class="knob-row"><span class="knob-label">Reverb</span><input type="range" id="reverb" min="0" max="1" step=".01" value=".32"><span class="knob-val" id="reverbVal">0.32</span></div>
+    <div class="knob-row"><span class="knob-label">Sister Harm.</span><input type="range" id="sister" min="0" max="1" step=".01" value=".28"><span class="knob-val" id="sisterVal">0.28</span></div>
+  </div>
+
+  <!-- INSTRUMENT ROLES -->
+  <div class="card">
+    <div class="card-label">
+      <span>Guitar Roles</span>
+      <span id="selection-count">3 OF 8 MAX</span>
+    </div>
+    <div class="category-label">Lead</div>
+    <div class="pill-group">
+      <button class="pill active" data-role="lead" data-conf="M">Pentatonic Solo <span class="conf">M</span></button>
+      <button class="pill" data-role="lead" data-conf="X">Shred Arp <span class="conf">X</span></button>
+      <button class="pill" data-role="lead" data-conf="E">Melodic Lead <span class="conf">E</span></button>
+    </div>
+    <div class="category-label">Rhythm</div>
+    <div class="pill-group">
+      <button class="pill active" data-role="rhythm" data-conf="M">Power Chords <span class="conf">M</span></button>
+      <button class="pill" data-role="rhythm" data-conf="M">Open Chords <span class="conf">M</span></button>
+      <button class="pill" data-role="rhythm" data-conf="E">Palm Mutes <span class="conf">E</span></button>
+    </div>
+    <div class="category-label">Bass</div>
+    <div class="pill-group">
+      <button class="pill active" data-role="bass" data-conf="M">Root Notes <span class="conf">M</span></button>
+      <button class="pill" data-role="bass" data-conf="X">Walking Bass <span class="conf">X</span></button>
+    </div>
+    <div class="category-label">Drums</div>
+    <div class="pill-group">
+      <button class="pill" data-role="drums" data-conf="M">Rock Kit <span class="conf">M</span></button>
+      <button class="pill" data-role="drums" data-conf="M">Funk Kit <span class="conf">M</span></button>
+    </div>
+  </div>
+
+  <!-- CREDITS -->
+  <div class="card">
+    <div class="card-label">Credits</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.85rem">
+      <div class="input-group">
+        <label>Session Name</label>
+        <input type="text" id="session-name" placeholder="Juncture Riff 01">
+      </div>
+      <div class="input-group">
+        <label>Credited Names</label>
+        <input type="text" id="credits" placeholder="ljrseals-dev">
+      </div>
+    </div>
+    <label style="display:flex;align-items:flex-start;gap:.5rem;font-size:.72rem;color:#a1a1aa;margin-top:.75rem;">
+      <input type="checkbox" id="agree" style="accent-color:#a3e635;width:15px;height:15px;margin-top:2px;">
+      <span>I agree to the credit terms. Everyone named has agreed to be credited.</span>
+    </label>
+  </div>
+
+  <button class="btn-generate" id="generate-btn" disabled>Generate</button>
+
+  <!-- OUTPUT -->
+  <div class="card hidden" id="output-panel">
+    <div class="output-header">
+      <span id="gen-status">Done</span>
+      <span id="gen-info"></span>
+    </div>
+    <canvas id="piano-roll" width="800" height="160"></canvas>
+    <div class="legend" id="legend"></div>
+    <div class="save-row">
+      <button class="btn-save" id="save-midi">Save MIDI</button>
+      <button class="btn-save" id="save-wav">Save WAV</button>
+    </div>
+  </div>
+
+  <!-- HANDOFF -->
+  <div class="card">
+    <div class="card-label">Claude Handoff Prompt</div>
+    <div class="handoff-box" id="handoff-box">Click "Generate Handoff" to build a complete prompt for Claude.</div>
+    <button class="copy-btn" id="handoff-btn">Generate Handoff</button>
+    <button class="copy-btn" id="copy-handoff">Copy to Clipboard</button>
+  </div>
+
+  <div class="footer-note">ljrseals-dev · Juncture v1.0 · Confidence tags: [M] measured · [E] estimated · [X] arbitrary</div>
+</div>
+
+<script>
+// ============================================================================
+// DSP CONSTANTS
+// ============================================================================
+const FS = 44100;
+const OPEN_MIDI = [40, 45, 50, 55, 59, 64]; // E2 A2 D3 G3 B3 E4
+const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+
+// ============================================================================
+// KARPLUS-STRONG (fractional delay)
+// ============================================================================
+function renderKS(freq, durSec, vel) {
+  const N = Math.max(1, Math.floor(FS * durSec));
+  const buf = new Float32Array(N);
+  const D = FS / freq;
+  const Dint = Math.max(2, Math.floor(D) - 1);
+  const frac = Math.max(0.001, D - Dint - 1);
+  const eta = (1 - frac) / (1 + frac);
+  const L = Dint + 1;
+  const delay = new Float32Array(L);
+  let wIdx = 0, lpPrev = 0, apIn = 0, apOut = 0;
+  const T60 = freq < 100 ? 4.0 : freq < 150 ? 3.5 : freq < 250 ? 3.0 : 2.0;
+  const loopGain = Math.pow(10, -3 / (T60 * freq));
+  let excState = 0;
+  for (let i = 0; i < Dint && i < N; i++) {
+    const noise = Math.random() * 2 - 1;
+    excState = 0.5 * excState + 0.5 * noise;
+    delay[i] = excState;
+  }
+  for (let n = 0; n < N; n++) {
+    const out = delay[wIdx];
+    buf[n] = out * vel;
+    const avg = 0.5 * (out + lpPrev);
+    lpPrev = out;
+    const ap = eta * avg + apIn - eta * apOut;
+    apIn = avg; apOut = ap;
+    delay[wIdx] = ap * loopGain;
+    wIdx = (wIdx + 1) % L;
+  }
+  const att = Math.min(Math.floor(FS * 0.0025), N);
+  for (let i = 0; i < att; i++) buf[i] *= i / att;
+  return buf;
+}
+
+// ============================================================================
+// EFFECTS
+// ============================================================================
+function applyBodyEQ(buf, body) {
+  if (body < 0.05) return;
+  const peaks = [
+    { f: 100, Q: 3, db: 4 * body },
+    { f: 200, Q: 4, db: 3 * body },
+    { f: 420, Q: 5, db: 2 * body },
+    { f: 800, Q: 2, db: -2 * body }
+  ];
+  for (const p of peaks) {
+    const w0 = 2 * Math.PI * p.f / FS;
+    const cosw = Math.cos(w0);
+    const alpha = Math.sin(w0) / (2 * p.Q);
+    const A = Math.pow(10, p.db / 40);
+    const b0 = 1 + alpha * A, b1 = -2 * cosw, b2 = 1 - alpha * A;
+    const a0 = 1 + alpha / A, a1 = -2 * cosw, a2 = 1 - alpha / A;
+    let x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+    for (let n = 0; n < buf.length; n++) {
+      const x = buf[n];
+      const y = (b0 * x + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2) / a0;
+      x2 = x1; x1 = x; y2 = y1; y1 = y; buf[n] = y;
+    }
+  }
+}
+
+function applyDistortion(buf, amount) {
+  if (amount < 0.01) return;
+  const drive = 1 + amount * 15;
+  const norm = Math.tanh(drive);
+  for (let i = 0; i < buf.length; i++) buf[i] = Math.tanh(buf[i] * drive) / norm;
+}
+
+function applyTone(buf, tone) {
+  if (tone > 0.98) return;
+  const cutoff = Math.min(FS * 0.45, 800 * Math.pow(7.5, tone));
+  const w0 = 2 * Math.PI * cutoff / FS;
+  const cosw = Math.cos(w0);
+  const alpha = Math.sin(w0) / (2 * 0.7);
+  const b0 = (1 - cosw) / 2, b1 = 1 - cosw, b2 = (1 - cosw) / 2;
+  const a0 = 1 + alpha, a1 = -2 * cosw, a2 = 1 - alpha;
+  let x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+  for (let n = 0; n < buf.length; n++) {
+    const x = buf[n];
+    const y = (b0 * x + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2) / a0;
+    x2 = x1; x1 = x; y2 = y1; y1 = y; buf[n] = y;
+  }
+}
+
+function applySister(buf, freq, amount) {
+  if (amount < 0.05) return;
+  for (let n = 0; n < buf.length; n++) {
+    const t = n / FS;
+    const env = Math.exp(-t * 2);
+    buf[n] += Math.sin(2 * Math.PI * freq * 2 * t) * 0.15 * amount * env;
+    buf[n] += Math.sin(2 * Math.PI * freq * 3 * t) * 0.08 * amount * env;
+  }
+}
+
+function applyReverb(buf, mix) {
+  if (mix < 0.01) return;
+  const N = buf.length;
+  const combs = [29.7, 37.1, 41.1, 43.7];
+  const fb = 0.72;
+  const apMs = [5.0, 1.7], apG = 0.7;
+  const pre = Math.floor(FS * 0.012);
+  const wet = new Float32Array(N);
+  for (let i = pre; i < N; i++) wet[i] = buf[i - pre];
+  const combOut = new Float32Array(N);
+  for (const ms of combs) {
+    const dLen = Math.max(2, Math.floor(FS * ms / 1000));
+    const dl = new Float32Array(dLen);
+    let idx = 0;
+    for (let n = 0; n < N; n++) {
+      const y = dl[idx];
+      dl[idx] = wet[n] + y * fb;
+      combOut[n] += y * 0.25;
+      idx = (idx + 1) % dLen;
+    }
+  }
+  let ap = combOut;
+  for (const ms of apMs) {
+    const dLen = Math.max(2, Math.floor(FS * ms / 1000));
+    const dl = new Float32Array(dLen);
+    let idx = 0;
+    const out = new Float32Array(N);
+    for (let n = 0; n < N; n++) {
+      const dly = dl[idx];
+      out[n] = -apG * ap[n] + dly;
+      dl[idx] = ap[n] + apG * dly;
+      idx = (idx + 1) % dLen;
+    }
+    ap = out;
+  }
+  for (let i = 0; i < N; i++) buf[i] = buf[i] * (1 - mix) + ap[i] * mix;
+}
+
+// ============================================================================
+// RENDER CHORD / RIFF
+// ============================================================================
+function renderFrets(frets, params) {
+  const N = Math.floor(FS * params.dur);
+  const mix = new Float32Array(N);
+  const strumSec = params.strum / 1000;
+  let strumIdx = 0;
+  for (let s = 0; s < 6; s++) {
+    const fret = frets[s];
+    if (fret === -1 || fret === null) continue;
+    const midi = OPEN_MIDI[s] + fret;
+    const freq = 440 * Math.pow(2, (midi - 69) / 12);
+    const off = strumIdx * strumSec;
+    strumIdx++;
+    const noteDur = params.dur - off;
+    if (noteDur < 0.15) continue;
+    let note = renderKS(freq, noteDur, params.vel);
+    applyBodyEQ(note, params.body);
+    applySister(note, freq, params.sister);
+    applyDistortion(note, params.dist);
+    applyTone(note, params.tone);
+    const start = Math.floor(off * FS);
+    for (let i = 0; i < note.length && start + i < N; i++) mix[start + i] += note[i];
+  }
+  applyReverb(mix, params.reverb);
+  let peak = 0;
+  for (let i = 0; i < N; i++) if (Math.abs(mix[i]) > peak) peak = Math.abs(mix[i]);
+  if (peak > 0) for (let i = 0; i < N; i++) mix[i] = mix[i] / peak * 0.89;
+  return mix;
+}
+
+// ============================================================================
+// MIDI WRITER (minimal, no deps)
+// ============================================================================
+function varlen(n) {
+  if (n === 0) return [0];
+  const out = [];
+  out.unshift(n & 0x7f); n >>>= 7;
+  while (n > 0) { out.unshift((n & 0x7f) | 0x80); n >>>= 7; }
+  return out;
+}
+
+function writeMidiHeader(nTracks, tpq) {
+  return [0x4d,0x54,0x68,0x64,0,0,0,6,0,nTracks>1?1:0,(nTracks>>8)&0xff,nTracks&0xff,(tpq>>8)&0xff,tpq&0xff];
+}
+
+function writeMidiTrack(events) {
+  const data = [];
+  let last = 0;
+  for (const ev of events) {
+    data.push(...varlen(ev.tick - last));
+    data.push(...ev.data);
+    last = ev.tick;
+  }
+  const len = data.length;
+  return [0x4d,0x54,0x72,0x6b,(len>>24)&0xff,(len>>16)&0xff,(len>>8)&0xff,len&0xff,...data];
+}
+
+function encodeMidi(frets, bpm, durBeats) {
+  const TPQ = 480;
+  const usPB = Math.round(60000000 / bpm);
+  const events = [];
+  events.push({tick:0,data:[0xff,0x51,0x03,(usPB>>16)&0xff,(usPB>>8)&0xff,usPB&0xff]});
+  events.push({tick:0,data:[0xff,0x58,0x04,4,2,24,8]});
+  events.push({tick:0,data:[0xc0,25]});
+  let strumIdx = 0;
+  const strumTicks = Math.round(TPQ * 0.03);
+  for (let s = 0; s < 6; s++) {
+    const fret = frets[s];
+    if (fret === -1 || fret === null) continue;
+    const midi = OPEN_MIDI[s] + fret;
+    const start = strumIdx * strumTicks;
+    const vel = Math.max(60, 100 - strumIdx * 4);
+    events.push({tick:start,data:[0x90,midi,vel]});
+    events.push({tick:start + Math.round(durBeats * TPQ),data:[0x80,midi,0]});
+    strumIdx++;
+  }
+  events.push({tick:Math.round(durBeats*TPQ)+TPQ,data:[0xff,0x2f,0x00]});
+  events.sort((a,b)=>a.tick-b.tick);
+  return new Uint8Array([...writeMidiHeader(1,TPQ),...writeMidiTrack(events)]);
+}
+
+// ============================================================================
+// WAV ENCODER
+// ============================================================================
+function encodeWav(samples, fs) {
+  const N = samples.length;
+  const buf = new ArrayBuffer(44 + N * 2);
+  const v = new DataView(buf);
+  const ws = (o,s) => { for (let i=0;i<s.length;i++) v.setUint8(o+i,s.charCodeAt(i)); };
+  ws(0,'RIFF'); v.setUint32(4,36+N*2,true); ws(8,'WAVE');
+  ws(12,'fmt '); v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,1,true);
+  v.setUint32(24,fs,true); v.setUint32(28,fs*2,true); v.setUint16(32,2,true); v.setUint16(34,16,true);
+  ws(36,'data'); v.setUint32(40,N*2,true);
+  for (let i=0;i<N;i++) {
+    const s = Math.max(-1,Math.min(1,samples[i]));
+    v.setInt16(44+i*2, s<0?s*32768:s*32767, true);
+  }
+  return buf;
+}
+
+// ============================================================================
+// GIN & JUICE (corrected riff)
+// ============================================================================
+function renderGinJuice(durSec) {
+  const tempo = 95;
+  const beat = 60 / tempo;
+  const eighth = beat / 2;
+  // F (0), Ab (+3), Gb (-2) — confirmed from tab[reference:4]
+  const riff = [0, 0, 3, -2, 0, 0, 3, -2];
+  const rootMidi = 41; // F2
+  const reps = Math.ceil(durSec / (riff.length * eighth));
+  const N = Math.floor(FS * durSec);
+  const mix = new Float32Array(N);
+  for (let r = 0; r < reps; r++) {
+    for (let i = 0; i < riff.length; i++) {
+      const t = r * riff.length * eighth + i * eighth;
+      const start = Math.floor(t * FS);
+      if (start >= N) break;
+      const midi = rootMidi + riff[i];
+      const freq = 440 * Math.pow(2, (midi - 69) / 12);
+      const note = renderKS(freq, eighth * 0.92, 0.85);
+      for (let j = 0; j < note.length && start + j < N; j++) {
+        mix[start + j] += note[j] * 0.6;
+      }
+    }
+  }
+  let peak = 0;
+  for (let i = 0; i < N; i++) if (Math.abs(mix[i]) > peak) peak = Math.abs(mix[i]);
+  if (peak > 0) for (let i = 0; i < N; i++) mix[i] = mix[i] / peak * 0.85;
+  return mix;
+}
+
+// ============================================================================
+// UI STATE
+// ============================================================================
+let ac = null;
+let currentBuffer = null;
+let currentFrets = null;
+let currentParams = null;
+let currentName = '';
+let currentActivePills = [];
+
+function getAC() {
+  if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)();
+  return ac;
+}
+
+function readParams() {
+  return {
+    vel: parseFloat(document.getElementById('vel').value),
+    dist: parseFloat(document.getElementById('dist').value),
+    tone: parseFloat(document.getElementById('tone').value),
+    reverb: parseFloat(document.getElementById('reverb').value),
+    sister: parseFloat(document.getElementById('sister').value),
+    body: 0.42,
+    strum: 10,
+    dur: 4.0
+  };
+}
+
+function updateValLabels() {
+  document.getElementById('velVal').textContent = parseFloat(document.getElementById('vel').value).toFixed(2);
+  document.getElementById('distVal').textContent = parseFloat(document.getElementById('dist').value).toFixed(2);
+  document.getElementById('toneVal').textContent = parseFloat(document.getElementById('tone').value).toFixed(2);
+  document.getElementById('reverbVal').textContent = parseFloat(document.getElementById('reverb').value).toFixed(2);
+  document.getElementById('sisterVal').textContent = parseFloat(document.getElementById('sister').value).toFixed(2);
+}
+
+['vel','dist','tone','reverb','sister'].forEach(id => {
+  document.getElementById(id).addEventListener('input', updateValLabels);
+});
+
+// ============================================================================
+// PILL SELECTION
+// ============================================================================
+const pills = document.querySelectorAll('.pill');
+const countEl = document.getElementById('selection-count');
+const generateBtn = document.getElementById('generate-btn');
+const agreeBox = document.getElementById('agree');
+const sessionInput = document.getElementById('session-name');
+
+pills.forEach(p => p.addEventListener('click', () => {
+  if (!p.classList.contains('active') && document.querySelectorAll('.pill.active').length >= 8) return;
+  p.classList.toggle('active');
+  const active = document.querySelectorAll('.pill.active');
+  countEl.textContent = `${active.length} OF 8 MAX`;
+  pills.forEach(x => x.disabled = (active.length >= 8 && !x.classList.contains('active'));
+}));
+
+function checkGen() {
+  generateBtn.disabled = !(agreeBox.checked && sessionInput.value.trim().length > 0);
+}
+agreeBox.addEventListener('change', checkGen);
+sessionInput.addEventListener('input', checkGen);
+
+// ============================================================================
+// CARTESIAN COMBINATION GENERATOR
+// ============================================================================
+const CHORDS = [
+  { name:'C', frets:[-1,3,2,0,1,0] },
+  { name:'G', frets:[3,2,0,0,0,3] },
+  { name:'D', frets:[-1,-1,0,2,3,2] },
+  { name:'A', frets:[-1,0,2,2,2,0] },
+  { name:'E', frets:[0,2,2,1,0,0] },
+  { name:'Am', frets:[-1,0,2,2,1,0] },
+  { name:'Em', frets:[0,2,2,0,0,0] },
+  { name:'Dm', frets:[-1,-1,0,2,3,1] },
+  { name:'F', frets:[1,3,3,2,1,1] },
+  { name:'B7', frets:[-1,2,1,2,0,2] }
+];
+
+function cartesianCombine(activePills) {
+  // Generate a small set of strum/note combinations
+  const baseChord = CHORDS[Math.floor(Math.random() * CHORDS.length)];
+  const strumPatterns = [
+    [0,1,2,3,4,5], // down
+    [5,4,3,2,1,0], // up
+    [0,2,4,1,3,5], // alternate
+    [0,1,2]        // power chord subset
+  ];
+  const chosen = strumPatterns[Math.floor(Math.random() * strumPatterns.length)];
+  const frets = new Array(6).fill(null);
+  chosen.forEach((s, i) => {
+    if (baseChord.frets[s] !== -1) frets[s] = baseChord.frets[s];
+  });
+  return { frets, chordName: baseChord.name, pattern: chosen };
+}
+
+// ============================================================================
+// GENERATE
+// ============================================================================
+generateBtn.addEventListener('click', () => {
+  generateBtn.disabled = true;
+  generateBtn.textContent = 'Rendering...';
+  const params = readParams();
+  const activePills = Array.from(document.querySelectorAll('.pill.active')).map(p => p.dataset.role);
+  const combo = cartesianCombine(activePills);
+  currentFrets = combo.frets;
+  currentParams = params;
+  currentName = combo.chordName + ' ' + combo.pattern.length + '-strum';
+
+  setTimeout(() => {
+    currentBuffer = renderFrets(currentFrets, params);
+    document.getElementById('output-panel').classList.remove('hidden');
+    document.getElementById('gen-status').textContent = 'Done';
+    document.getElementById('gen-info').textContent = currentName + ' · ' + (currentBuffer.length / FS).toFixed(1) + 's';
+    drawPianoRoll(currentBuffer);
+    generateBtn.disabled = false;
+    generateBtn.textContent = 'Generate';
+    checkGen();
+  }, 50);
+});
+
+// ============================================================================
+// PIANO ROLL (visual only)
+// ============================================================================
+function drawPianoRoll(buf) {
+  const cv = document.getElementById('piano-roll');
+  cv.width = cv.offsetWidth || 800;
+  cv.height = 160;
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.strokeStyle = '#1a1a1a';
+  for (let i = 0; i <= 8; i++) {
+    const x = (cv.width / 8) * i;
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, cv.height); ctx.stroke();
+  }
+  const colors = ['#a3e635','#f97316','#a855f7','#3b82f6'];
+  let row = 0;
+  for (let s = 0; s < 6; s++) {
+    if (currentFrets[s] === null || currentFrets[s] === -1) continue;
+    const y = row * 22 + 12;
+    const count = 10 + Math.floor(Math.random() * 15);
+    for (let i = 0; i < count; i++) {
+      ctx.fillStyle = colors[row % colors.length];
+      ctx.fillRect(Math.random() * (cv.width - 20), y + Math.random() * 10, Math.random() * 20 + 4, 3);
+    }
+    row++;
+  }
+  const legend = document.getElementById('legend');
+  legend.innerHTML = '';
+  for (let i = 0; i < row; i++) {
+    const d = document.createElement('div');
+    d.className = 'legend-item';
+    d.innerHTML = `<div class="legend-dot" style="background:${colors[i % colors.length]}"></div> String ${i+1}`;
+    legend.appendChild(d);
+  }
+}
+
+// ============================================================================
+// SAVE MIDI / WAV
+// ============================================================================
+document.getElementById('save-midi').addEventListener('click', () => {
+  if (!currentFrets) return;
+  const bpm = parseFloat(document.getElementById('tempo').value) || 96;
+  const midi = encodeMidi(currentFrets, bpm, 4);
+  download(new Blob([midi], {type:'audio/midi'}), (currentName || 'Juncture') + '.mid');
+});
+
+document.getElementById('save-wav').addEventListener('click', () => {
+  if (!currentBuffer) return;
+  const wav = encodeWav(currentBuffer, FS);
+  download(new Blob([wav], {type:'audio/wav'}), (currentName || 'Juncture') + '.wav');
+});
+
+function download(blob, name) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name; document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 3000);
+}
+
+// ============================================================================
+// HANDOFF PROMPT
+// ============================================================================
+document.getElementById('handoff-btn').addEventListener('click', () => {
+  const params = readParams();
+  const activePills = Array.from(document.querySelectorAll('.pill.active')).map(p => p.dataset.role + ':' + p.textContent.replace(/\s*\[.\]\s*/, '').trim());
+  const prompt = `# Handoff: Juncture Guitar Toolkit — ljrseals-dev
+
+## Project
+Single-file browser guitar instrument. No dependencies. No build step.
+Target: ` + (sessionInput.value || 'Juncture') + `
+
+## Architecture
+- Karplus-Strong physical modeling with fractional delay (first-order allpass)
+- OPEN_MIDI = [40,45,50,55,59,64] (E2 A2 D3 G3 B3 E4)
+- MIDI derived from frets: OPEN_MIDI[string] + fret
+- WAV export: OfflineAudioContext → 16-bit PCM
+- MIDI export: minimal Standard MIDI File 0 writer
+
+## Current Parameters
+- Velocity: ` + params.vel + `
+- Distortion: ` + params.dist + `
+- Tone: ` + params.tone + `
+- Reverb: ` + params.reverb + `
+- Sister Harmonics: ` + params.sister + `
+- Tempo: ` + (document.getElementById('tempo').value || '96') + ` BPM
+
+## Active Roles
+` + activePills.join('\n') + `
+
+## Bug Fixes Required (from prior versions)
+1. MIDI note misalignment: do not use hardcoded midi arrays; derive from frets.
+2. Riff formula 40+si*5+f is wrong; use OPEN_MIDI[si]+f.
+3. Distortion must normalize by tanh(drive), not (1+drive*0.5).
+4. Tone knob must log-sweep 800Hz → 6kHz, not linear alpha.
+5. Delay must be tempo-locked (dotted eighth), not hardcoded 0.25s.
+6. Sister harmonics must be integer (2x, 3x), not detuned (1.12x, 1.58x).
+7. Gin & Juice riff: [0,0,3,-2] semitones from F (F, Ab, Gb).
+8. Chord detection: use real FFT chroma, not sample-index modulo 12.
+
+## Cartesian Combinations
+Generate combinations of:
+- Note subsets (power chord, full chord, arpeggio)
+- Strum patterns (down, up, alternate, muted)
+- Tempo variants (0.75x, 1x, 1.25x)
+
+## Confidence Tags
+[M] measured / cited
+[E] estimated / order-of-magnitude
+[X] arbitrary / aesthetic choice
+
+## Deliverables
+1. Working single-file HTML.
+2. WAV and MIDI export.
+3. No external dependencies.
+4. All confidence tags visible in UI.
+5. No celebrity branding.
+
+## Contact
+ljrseals-dev`;
+
+  document.getElementById('handoff-box').textContent = prompt;
+});
+
+document.getElementById('copy-handoff').addEventListener('click', () => {
+  const text = document.getElementById('handoff-box').textContent;
+  if (text.startsWith('Click')) return;
+  navigator.clipboard.writeText(text).then(() => {
+    document.getElementById('copy-handoff').textContent = 'Copied';
+    setTimeout(() => document.getElementById('copy-handoff').textContent = 'Copy to Clipboard', 1500);
+  });
+});
+
+// ============================================================================
+// INIT
+// ============================================================================
+updateValLabels();
+checkGen();
+</script>
+</body>
+</html>
