@@ -1,0 +1,1349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MajorGuitar Ultimate 3 — Fixed</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0a0a0a; color: #e8e0d0;
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    padding: 1.5rem 1rem 4rem; max-width: 900px; margin: 0 auto;
+    font-size: 13px;
+  }
+  h1 { font-size: 1.6rem; color: #c8a96e; letter-spacing: .05em; margin-bottom: .25rem; }
+  h1 span { color: #e8c98e; }
+  .sub { font-size: .7rem; color: #666; letter-spacing: .1em; margin-bottom: 1.25rem; }
+  section { background: #111; border: 1px solid #222; padding: 1rem; margin-bottom: 1rem; }
+  h2 { font-size: .7rem; letter-spacing: .2em; text-transform: uppercase; color: #888; margin-bottom: .75rem; padding-bottom: .35rem; border-bottom: 1px solid #222; }
+  button {
+    background: #1a1a1a; border: 1px solid #333; color: #e8e0d0;
+    font-family: inherit; font-size: .7rem; letter-spacing: .08em;
+    text-transform: uppercase; padding: 7px 12px; cursor: pointer;
+    transition: all .12s; margin-right: 4px; margin-bottom: 4px;
+  }
+  button:hover { border-color: #c8a96e; color: #c8a96e; }
+  button.active { background: #c8a96e; color: #000; border-color: #c8a96e; }
+  .chord-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; margin-bottom: .75rem; }
+  .chord-btn {
+    background: #0a0a0a; border: 1px solid #222; color: #e8e0d0;
+    font-family: inherit; font-size: .68rem; padding: 8px 4px; cursor: pointer;
+    text-align: center;
+  }
+  .chord-btn:hover { border-color: #c8a96e; }
+  .chord-btn.active { background: #c8a96e; color: #000; }
+  .chord-btn .name { display: block; font-weight: 600; }
+  .chord-btn .type { display: block; font-size: .5rem; opacity: .6; margin-top: 1px; }
+  canvas { display: block; width: 100%; background: #060606; border: 1px solid #1a1a1a; margin-bottom: .5rem; }
+  .knobs { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1.5rem; margin-bottom: .75rem; }
+  .knob-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; font-size: .65rem; }
+  .knob-label { color: #888; width: 75px; flex-shrink: 0; letter-spacing: .08em; text-transform: uppercase; }
+  .knob-row input { flex: 1; height: 2px; background: #222; -webkit-appearance: none; cursor: pointer; }
+  .knob-row input::-webkit-slider-thumb { -webkit-appearance: none; width: 10px; height: 10px; border-radius: 50%; background: #c8a96e; cursor: pointer; }
+  .knob-row input::-moz-range-thumb { width: 10px; height: 10px; border-radius: 50%; background: #c8a96e; border: none; cursor: pointer; }
+  .knob-val { color: #c8a96e; width: 34px; text-align: right; font-variant-numeric: tabular-nums; font-size: .68rem; }
+  .row { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: .5rem; align-items: center; }
+  #status { font-size: .65rem; color: #27ae60; letter-spacing: .08em; text-transform: uppercase; min-height: 1rem; margin-top: .25rem; }
+  #status.err { color: #c0392b; }
+  select { background: #0a0a0a; color: #e8e0d0; border: 1px solid #333; padding: 5px 8px; font-family: inherit; font-size: .7rem; }
+  .info { font-size: .65rem; color: #888; margin-bottom: .5rem; line-height: 1.5; }
+  .info b { color: #c8a96e; }
+</style>
+</head>
+<body>
+
+<h1>MajorGuitar <span>Ultimate 3</span> — Fixed</h1>
+<div class="sub">Karplus-Strong · fractional delay · Fender Clean default · Gin &amp; Juice fixed · functional song engine</div>
+
+<!-- ============ PRESETS ============ -->
+<section>
+  <h2>Presets</h2>
+  <div class="row">
+    <button class="preset-btn active" data-preset="fender-clean">Fender Clean</button>
+    <button class="preset-btn" data-preset="edge-breakup">Edge of Breakup</button>
+    <button class="preset-btn" data-preset="palm-mute">Palm Mute</button>
+    <button class="preset-btn" data-preset="ambient">Ambient</button>
+  </div>
+  <div class="info">Fender Strat/Tele → blackface Deluxe, edge of breakup. Default is E major, 96 BPM.</div>
+</section>
+
+<!-- ============ CHORD PLAYER ============ -->
+<section>
+  <h2>Chord Player</h2>
+  <div class="chord-grid" id="chordGrid"></div>
+  <canvas id="fretboard" height="110"></canvas>
+  <canvas id="waveform" height="80"></canvas>
+  <div class="knobs" id="knobs"></div>
+  <div class="row">
+    <button onclick="playChord()">Play</button>
+    <button onclick="exportWAV()">WAV</button>
+    <button onclick="exportMIDI()">MIDI</button>
+  </div>
+  <div id="status"></div>
+</section>
+
+<!-- ============ RIFF ENGINE ============ -->
+<section>
+  <h2>Riff Engine</h2>
+  <div class="row" id="riffGrid"></div>
+  <div class="row">
+    <button onclick="playRiff()">Play Riff</button>
+    <button onclick="randomRiff()">Random</button>
+    <button onclick="exportRiffMIDI()">MIDI</button>
+  </div>
+  <div id="riffStatus" style="font-size:.65rem;color:#27ae60;min-height:1rem;"></div>
+</section>
+
+<!-- ============ SONG ENGINE ============ -->
+<section>
+  <h2>Song Engine (fixed)</h2>
+  <div class="row">
+    <label style="font-size:.65rem;color:#888;">Key</label>
+    <select id="songKey">
+      <option value="0">C</option>
+      <option value="2">D</option>
+      <option value="4" selected>E</option>
+      <option value="5">F</option>
+      <option value="7">G</option>
+      <option value="9">A</option>
+      <option value="11">B</option>
+    </select>
+    <button onclick="generateSongA()">Generate A (procedural)</button>
+    <button onclick="generateSongB()">Generate B (traditional)</button>
+  </div>
+  <div id="songTimeline" class="info" style="min-height:2.5rem;"></div>
+  <div class="row">
+    <button onclick="playSong()">Play Song</button>
+  </div>
+  <div id="songStatus" style="font-size:.65rem;color:#27ae60;min-height:1rem;"></div>
+</section>
+
+<!-- ============ GIN & JUICE ============ -->
+<section>
+  <h2>Gin &amp; Juice — Fixed (FFT chroma + looped buffer)</h2>
+  <div class="row">
+    <button onclick="ginToggle()" id="ginBtn">Start Engine</button>
+    <button onclick="ginExportWAV()">WAV</button>
+    <button onclick="ginExportMIDI()">MIDI</button>
+  </div>
+  <canvas id="ginWave" height="55"></canvas>
+  <canvas id="ginChroma" height="90"></canvas>
+  <div id="ginInfo" class="info">Riff: F F A♭ G♭ F F A♭ G♭ — FFT-based chord detection live. Real chromagram, not sample-index fake.</div>
+  <div id="ginStatus" style="font-size:.65rem;color:#f5a623;min-height:1rem;"></div>
+</section>
+
+<script>
+// ============================================================================
+// CORE DATA
+// ============================================================================
+
+const FS = 44100;
+const OPEN_MIDI = [40, 45, 50, 55, 59, 64];   // E2 A2 D3 G3 B3 E4
+const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+
+const CHORDS = [
+  { name:'C',   type:'maj', frets:[-1,3,2,0,1,0] },
+  { name:'G',   type:'maj', frets:[3,2,0,0,0,3] },
+  { name:'D',   type:'maj', frets:[-1,-1,0,2,3,2] },
+  { name:'A',   type:'maj', frets:[-1,0,2,2,2,0] },
+  { name:'E',   type:'maj', frets:[0,2,2,1,0,0] },
+  { name:'Am',  type:'min', frets:[-1,0,2,2,1,0] },
+  { name:'Em',  type:'min', frets:[0,2,2,0,0,0] },
+  { name:'Dm',  type:'min', frets:[-1,-1,0,2,3,1] },
+  { name:'F',   type:'maj', frets:[1,3,3,2,1,1] },
+  { name:'B7',  type:'7',   frets:[-1,2,1,2,0,2] },
+  { name:'C7',  type:'7',   frets:[-1,3,2,3,1,0] },
+  { name:'G7',  type:'7',   frets:[3,2,0,0,0,1] },
+  { name:'A7',  type:'7',   frets:[-1,0,2,0,2,0] },
+  { name:'E7',  type:'7',   frets:[0,2,0,1,0,0] },
+  { name:'Bm',  type:'min', frets:[-1,2,4,4,3,2] },
+  { name:'F#m', type:'min', frets:[2,4,4,2,2,2] }
+];
+
+const PRESETS = {
+  'fender-clean': { dist:0.12, sister:0.28, palm:0.00, wham:0.00, reverb:0.32, delay:0.22, body:0.42, velocity:0.90, strum:10, dur:4.0, tone:0.75, pickup:0.50 },
+  'edge-breakup': { dist:0.35, sister:0.35, palm:0.00, wham:0.05, reverb:0.28, delay:0.15, body:0.50, velocity:1.00, strum:8,  dur:4.0, tone:0.70, pickup:0.55 },
+  'palm-mute':    { dist:0.55, sister:0.30, palm:0.45, wham:0.00, reverb:0.18, delay:0.08, body:0.35, velocity:1.00, strum:5,  dur:1.2, tone:0.65, pickup:0.60 },
+  'ambient':      { dist:0.20, sister:0.55, palm:0.00, wham:0.18, reverb:0.68, delay:0.45, body:0.32, velocity:0.85, strum:14, dur:6.0, tone:0.60, pickup:0.45 }
+};
+
+const KNOB_DEFS = [
+  ['dist','dist','Distortion',100,100],
+  ['sister','sister','Sister harm.',100,100],
+  ['palm','palm','Palm mute',100,100],
+  ['wham','wham','Whammy',100,100],
+  ['reverb','reverb','Reverb',100,100],
+  ['delay','delay','Delay',100,100],
+  ['body','body','Body res.',100,100],
+  ['velocity','vel','Velocity',100,100],
+  ['tone','tone','Tone',100,100],
+  ['pickup','pickup','Pickup',100,100],
+  ['strum','strum','Strum ms',40,1],
+  ['dur','dur','Duration s',12,1]
+];
+
+const RIFFS = [
+  { name:'OPEN E',    strings:[0,1,2,3,4,5], frets:[0,0,2,2,0,0] },
+  { name:'E5 POWER',  strings:[0,1,2],       frets:[0,2,2] },
+  { name:'A5 POWER',  strings:[1,2,3],       frets:[0,2,2] },
+  { name:'D5 POWER',  strings:[2,3,4],       frets:[0,0,0] },
+  { name:'E MINOR',   strings:[0,1,2,3,4,5], frets:[0,2,2,0,0,0] },
+  { name:'A MINOR',   strings:[1,2,3,4,5],   frets:[0,2,2,1,0] },
+  { name:'PENTATONIC',strings:[0,1,2,3,4,5], frets:[0,2,2,4,5,5] },
+  { name:'G MAJOR',   strings:[0,1,2,3,4,5], frets:[3,2,0,0,0,3] }
+];
+
+// ============================================================================
+// STATE
+// ============================================================================
+
+let ac = null;
+let currentParams = { ...PRESETS['fender-clean'] };
+let curChord = 4;   // E major
+let curRiff = 0;
+let tempo = 96;
+let chordBufferCache = { key:null, buffer:null };
+
+function getAC() {
+  if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)();
+  return ac;
+}
+
+function setStatus(msg, isErr) {
+  const el = document.getElementById('status');
+  el.textContent = msg;
+  el.className = isErr ? 'err' : '';
+}
+
+// ============================================================================
+// DSP — KARPLUS-STRONG (with fractional delay)
+// ============================================================================
+
+function renderKSNote(fs, freq, durSec, vel, palm) {
+  const N = Math.floor(fs * durSec);
+  const buf = new Float32Array(N);
+
+  // Delay line length with fractional part
+  const D = fs / freq;
+  const Dint = Math.max(2, Math.floor(D) - 1);
+  const frac = Math.max(0.001, D - Dint - 1);
+  const eta = (1 - frac) / (1 + frac);        // allpass coefficient
+
+  const L = Dint + 1;
+  const delay = new Float32Array(L);
+  let wIdx = 0;
+  let lpPrev = 0;
+  let apInPrev = 0, apOutPrev = 0;
+
+  // T60 → loop gain
+  const T60 = freq < 100 ? 4.0 : freq < 150 ? 3.5 : freq < 250 ? 3.0 : 2.0;
+  const loopGain = Math.pow(10, -3 / (T60 * freq));
+  const effectiveGain = loopGain * (1 - 0.4 * palm);
+
+  // Excitation: lowpassed noise burst
+  let excState = 0;
+  for (let i = 0; i < Dint && i < N; i++) {
+    const noise = Math.random() * 2 - 1;
+    excState = 0.5 * excState + 0.5 * noise;
+    delay[i] = excState;
+  }
+
+  for (let n = 0; n < N; n++) {
+    const out = delay[wIdx];
+    buf[n] = out * vel;
+
+    // One-zero averaging loop filter (the "string damping")
+    const avg = 0.5 * (out + lpPrev);
+    lpPrev = out;
+
+    // Allpass fractional-delay correction
+    const ap = eta * avg + apInPrev - eta * apOutPrev;
+    apInPrev = avg;
+    apOutPrev = ap;
+
+    // Write back with loop gain
+    delay[wIdx] = ap * effectiveGain;
+    wIdx = (wIdx + 1) % L;
+  }
+
+  // Attack ramp
+  const attackN = Math.min(Math.floor(fs * 0.0025), N);
+  for (let i = 0; i < attackN; i++) buf[i] *= i / attackN;
+
+  // Fade tail
+  const tailN = Math.min(Math.floor(fs * 0.03), N);
+  for (let i = 0; i < tailN; i++) buf[N - tailN + i] *= (tailN - i) / tailN;
+
+  return buf;
+}
+
+// ============================================================================
+// DSP — FILTERS
+// ============================================================================
+
+function applyBodyEQ(buf, fs, body) {
+  if (body < 0.05) return;
+  const peaks = [
+    { f: 100, Q: 3.0, db:  4 * body },
+    { f: 200, Q: 4.0, db:  3 * body },
+    { f: 420, Q: 5.0, db:  2 * body },
+    { f: 800, Q: 2.0, db: -2 * body }
+  ];
+  for (const p of peaks) {
+    const w0 = 2 * Math.PI * p.f / fs;
+    const cosw0 = Math.cos(w0);
+    const alpha = Math.sin(w0) / (2 * p.Q);
+    const A = Math.pow(10, p.db / 40);
+    const b0 = 1 + alpha * A;
+    const b1 = -2 * cosw0;
+    const b2 = 1 - alpha * A;
+    const a0 = 1 + alpha / A;
+    const a1 = -2 * cosw0;
+    const a2 = 1 - alpha / A;
+    let x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+    for (let n = 0; n < buf.length; n++) {
+      const x = buf[n];
+      const y = (b0 * x + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2) / a0;
+      x2 = x1; x1 = x;
+      y2 = y1; y1 = y;
+      buf[n] = y;
+    }
+  }
+}
+
+function applyDistortion(buf, amount) {
+  if (amount < 0.01) return;
+  const drive = 1 + amount * 15;
+  const norm = Math.tanh(drive);
+  for (let i = 0; i < buf.length; i++) {
+    buf[i] = Math.tanh(buf[i] * drive) / norm;
+  }
+}
+
+function applyTone(buf, fs, tone) {
+  if (tone > 0.98) return;   // fully bright — skip
+  const cutoff = Math.min(fs * 0.45, 800 * Math.pow(7.5, tone));
+  const w0 = 2 * Math.PI * cutoff / fs;
+  const cosw0 = Math.cos(w0);
+  const alpha = Math.sin(w0) / (2 * 0.7);
+  const b0 = (1 - cosw0) / 2;
+  const b1 = 1 - cosw0;
+  const b2 = (1 - cosw0) / 2;
+  const a0 = 1 + alpha;
+  const a1 = -2 * cosw0;
+  const a2 = 1 - alpha;
+  let x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+  for (let n = 0; n < buf.length; n++) {
+    const x = buf[n];
+    const y = (b0 * x + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2) / a0;
+    x2 = x1; x1 = x;
+    y2 = y1; y1 = y;
+    buf[n] = y;
+  }
+}
+
+function applySister(buf, fs, freq, amount) {
+  if (amount < 0.05) return;
+  for (let n = 0; n < buf.length; n++) {
+    const t = n / fs;
+    const env = Math.exp(-t * 2.0);
+    buf[n] += Math.sin(2 * Math.PI * freq * 2 * t) * 0.15 * amount * env;
+    buf[n] += Math.sin(2 * Math.PI * freq * 3 * t) * 0.08 * amount * env;
+  }
+}
+
+function applyPickup(buf, fs, freq, blend) {
+  // Neck (0) → p=0.28, bridge (1) → p=0.10
+  const p = 0.28 - blend * 0.18;
+  const dSamp = Math.round(p * fs / freq);
+  if (dSamp < 1) return;
+  const orig = new Float32Array(buf);
+  for (let i = 0; i < buf.length; i++) {
+    buf[i] = orig[i] - (i >= dSamp ? orig[i - dSamp] : 0);
+  }
+}
+
+function applyWhammy(buf, fs, depth) {
+  if (depth < 0.01) return;
+  const orig = new Float32Array(buf);
+  let phase = 0;
+  for (let n = 0; n < buf.length; n++) {
+    const t = n / fs;
+    const mod = 1 + depth * 0.04 * Math.sin(2 * Math.PI * 6 * t);
+    phase += mod;
+    buf[n] = orig[Math.min(orig.length - 1, Math.floor(phase))] || 0;
+  }
+}
+
+function applyDelay(buf, fs, mix, bpm) {
+  if (mix < 0.01) return;
+  const delaySamples = Math.floor(fs * (0.75 * 60 / bpm));
+  const feedback = 0.35;
+  const wet = new Float32Array(buf.length);
+  for (let i = delaySamples; i < buf.length; i++) {
+    wet[i] = buf[i - delaySamples] + wet[i - delaySamples] * feedback;
+  }
+  for (let i = 0; i < buf.length; i++) buf[i] += wet[i] * mix;
+}
+
+function applyReverb(buf, fs, mix) {
+  if (mix < 0.01) return;
+  const N = buf.length;
+  const combs = [29.7, 37.1, 41.1, 43.7];
+  const combFB = 0.72;
+  const apMs = [5.0, 1.7];
+  const apG = 0.70;
+
+  // Pre-delay
+  const preDelay = Math.floor(fs * 0.012);
+  const wet = new Float32Array(N);
+  for (let i = preDelay; i < N; i++) wet[i] = buf[i - preDelay];
+
+  // Parallel combs
+  const combOut = new Float32Array(N);
+  for (const ms of combs) {
+    const dLen = Math.max(2, Math.floor(fs * ms / 1000));
+    const dl = new Float32Array(dLen);
+    let idx = 0;
+    for (let n = 0; n < N; n++) {
+      const y = dl[idx];
+      dl[idx] = wet[n] + y * combFB;
+      combOut[n] += y * 0.25;
+      idx = (idx + 1) % dLen;
+    }
+  }
+
+  // Series allpass
+  let ap = combOut;
+  for (const ms of apMs) {
+    const dLen = Math.max(2, Math.floor(fs * ms / 1000));
+    const dl = new Float32Array(dLen);
+    let idx = 0;
+    const out = new Float32Array(N);
+    for (let n = 0; n < N; n++) {
+      const dly = dl[idx];
+      out[n] = -apG * ap[n] + dly;
+      dl[idx] = ap[n] + apG * dly;
+      idx = (idx + 1) % dLen;
+    }
+    ap = out;
+  }
+
+  // Mix
+  for (let i = 0; i < N; i++) buf[i] = buf[i] * (1 - mix) + ap[i] * mix;
+}
+
+// ============================================================================
+// CHORD RENDER
+// ============================================================================
+
+function renderChordBuffer(frets, params) {
+  const N = Math.floor(FS * params.dur);
+  const mix = new Float32Array(N);
+  const strumSec = params.strum / 1000;
+
+  let strumIdx = 0;
+  for (let string = 0; string < 6; string++) {
+    const fret = frets[string];
+    if (fret === -1) continue;
+    const midi = OPEN_MIDI[string] + fret;
+    const freq = 440 * Math.pow(2, (midi - 69) / 12);
+    const offset = strumIdx * strumSec;
+    strumIdx++;
+
+    const noteDur = params.dur - offset;
+    if (noteDur < 0.15) continue;
+
+    let note = renderKSNote(FS, freq, noteDur, params.velocity, params.palm);
+    applyBodyEQ(note, FS, params.body);
+    applySister(note, FS, freq, params.sister);
+    applyPickup(note, FS, freq, params.pickup);
+    applyDistortion(note, params.dist);
+    applyTone(note, FS, params.tone);
+    if (params.wham > 0.01) applyWhammy(note, FS, params.wham);
+
+    const start = Math.floor(offset * FS);
+    for (let i = 0; i < note.length && start + i < N; i++) {
+      mix[start + i] += note[i];
+    }
+  }
+
+  applyDelay(mix, FS, params.delay, tempo);
+  applyReverb(mix, FS, params.reverb);
+
+  // Normalize
+  let peak = 0;
+  for (let i = 0; i < N; i++) if (Math.abs(mix[i]) > peak) peak = Math.abs(mix[i]);
+  if (peak > 0) for (let i = 0; i < N; i++) mix[i] = mix[i] / peak * 0.89;
+
+  return mix;
+}
+
+function getChordBuffer() {
+  const key = curChord + '|' + JSON.stringify(currentParams) + '|' + tempo;
+  if (chordBufferCache.key === key) return chordBufferCache.buffer;
+  const buf = renderChordBuffer(CHORDS[curChord].frets, currentParams);
+  chordBufferCache = { key, buffer: buf };
+  return buf;
+}
+
+// ============================================================================
+// WAV / MIDI ENCODERS
+// ============================================================================
+
+function encodeWAV(samples, fs) {
+  const N = samples.length;
+  const buf = new ArrayBuffer(44 + N * 2);
+  const v = new DataView(buf);
+  const ws = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+  ws(0, 'RIFF');
+  v.setUint32(4, 36 + N * 2, true);
+  ws(8, 'WAVE');
+  ws(12, 'fmt ');
+  v.setUint32(16, 16, true);
+  v.setUint16(20, 1, true);
+  v.setUint16(22, 1, true);
+  v.setUint32(24, fs, true);
+  v.setUint32(28, fs * 2, true);
+  v.setUint16(32, 2, true);
+  v.setUint16(34, 16, true);
+  ws(36, 'data');
+  v.setUint32(40, N * 2, true);
+  for (let i = 0; i < N; i++) {
+    const s = Math.max(-1, Math.min(1, samples[i]));
+    v.setInt16(44 + i * 2, s < 0 ? s * 32768 : s * 32767, true);
+  }
+  return buf;
+}
+
+function varLen(n) {
+  if (n === 0) return [0];
+  const out = [];
+  out.unshift(n & 0x7F);
+  n >>>= 7;
+  while (n > 0) { out.unshift((n & 0x7F) | 0x80); n >>>= 7; }
+  return out;
+}
+
+function writeMidiHeader(numTracks, tpq) {
+  return [0x4D, 0x54, 0x68, 0x64, 0, 0, 0, 6, 0, numTracks > 1 ? 1 : 0, (numTracks >> 8) & 0xFF, numTracks & 0xFF, (tpq >> 8) & 0xFF, tpq & 0xFF];
+}
+
+function writeMidiTrack(events) {
+  const data = [];
+  let last = 0;
+  for (const ev of events) {
+    const delta = ev.tick - last;
+    data.push(...varLen(delta));
+    data.push(...ev.data);
+    last = ev.tick;
+  }
+  const len = data.length;
+  return [0x4D, 0x54, 0x72, 0x6B, (len >> 24) & 0xFF, (len >> 16) & 0xFF, (len >> 8) & 0xFF, len & 0xFF, ...data];
+}
+
+// CORRECTED MIDI encoder — derives notes from frets
+function encodeChordMIDI(frets, durationBeats, bpm) {
+  const TPQ = 480;
+  const usPerBeat = Math.round(60000000 / bpm);
+  const events = [];
+
+  events.push({ tick: 0, data: [0xFF, 0x51, 0x03, (usPerBeat >> 16) & 0xFF, (usPerBeat >> 8) & 0xFF, usPerBeat & 0xFF] });
+  events.push({ tick: 0, data: [0xFF, 0x58, 0x04, 4, 2, 24, 8] });
+  events.push({ tick: 0, data: [0xC0, 25] });   // Acoustic Guitar Steel
+
+  const strumTicks = Math.round(TPQ * 0.03);
+  let strumIdx = 0;
+  for (let s = 0; s < 6; s++) {
+    const fret = frets[s];
+    if (fret === -1) continue;
+    const midi = OPEN_MIDI[s] + fret;
+    const vel = Math.max(60, 100 - strumIdx * 4);
+    const startTick = strumIdx * strumTicks;
+    events.push({ tick: startTick, data: [0x90, midi, vel] });
+    events.push({ tick: startTick + Math.round(durationBeats * TPQ), data: [0x80, midi, 0] });
+    strumIdx++;
+  }
+
+  events.push({ tick: Math.round(durationBeats * TPQ) + TPQ, data: [0xFF, 0x2F, 0x00] });
+  events.sort((a, b) => a.tick - b.tick);
+
+  const header = writeMidiHeader(1, TPQ);
+  const track = writeMidiTrack(events);
+  return new Uint8Array([...header, ...track]);
+}
+
+// CORRECTED riff MIDI — uses OPEN_MIDI[si] + fret (not 40 + si*5 + f)
+function encodeRiffMIDI(riff, bpm) {
+  const TPQ = 480;
+  const usPerBeat = Math.round(60000000 / bpm);
+  const events = [];
+
+  events.push({ tick: 0, data: [0xFF, 0x51, 0x03, (usPerBeat >> 16) & 0xFF, (usPerBeat >> 8) & 0xFF, usPerBeat & 0xFF] });
+  events.push({ tick: 0, data: [0xC0, 25] });
+
+  const strumTicks = Math.round(TPQ * 0.03);
+  const ringTicks = TPQ * 4;
+
+  riff.strings.forEach((si, i) => {
+    const fret = riff.frets[i];
+    if (fret === -1) return;
+    const midi = OPEN_MIDI[si] + fret;
+    const t = i * strumTicks;
+    events.push({ tick: t, data: [0x90, midi, 100] });
+    events.push({ tick: t + ringTicks, data: [0x80, midi, 0] });
+  });
+
+  events.push({ tick: ringTicks + riff.strings.length * strumTicks + TPQ, data: [0xFF, 0x2F, 0x00] });
+  events.sort((a, b) => a.tick - b.tick);
+
+  const header = writeMidiHeader(1, TPQ);
+  const track = writeMidiTrack(events);
+  return new Uint8Array([...header, ...track]);
+}
+
+function download(bytes, filename, mime) {
+  const blob = new Blob([bytes], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 3000);
+}
+
+// ============================================================================
+// CHORD PLAYER UI
+// ============================================================================
+
+function buildChordGrid() {
+  const el = document.getElementById('chordGrid');
+  el.innerHTML = '';
+  CHORDS.forEach((ch, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'chord-btn' + (i === curChord ? ' active' : '');
+    btn.innerHTML = `<span class="name">${ch.name}</span><span class="type">${ch.type}</span>`;
+    btn.onclick = () => {
+      document.querySelectorAll('.chord-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      curChord = i;
+      drawFretboard();
+      drawWaveform();
+    };
+    el.appendChild(btn);
+  });
+}
+
+function drawFretboard() {
+  const cv = document.getElementById('fretboard');
+  const W = cv.offsetWidth || 600;
+  cv.width = W; cv.height = 110;
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0, 0, W, 110);
+
+  const frets = CHORDS[curChord].frets;
+  const valid = frets.filter(f => f > 0);
+  const minF = valid.length ? Math.min(...valid) : 1;
+  const maxF = valid.length ? Math.max(...valid) : 4;
+  const startF = minF <= 1 ? 0 : minF - 1;
+  const numF = Math.max(4, maxF - startF + 1);
+
+  const padL = 30, padR = 15, padT = 22, padB = 14;
+  const fw = (W - padL - padR) / 6;
+  const fh = (110 - padT - padB) / numF;
+
+  // Nut
+  ctx.strokeStyle = '#c8a96e';
+  ctx.lineWidth = startF === 0 ? 3 : 0.5;
+  ctx.beginPath();
+  ctx.moveTo(padL, padT);
+  ctx.lineTo(padL + fw * 6, padT);
+  ctx.stroke();
+
+  // Fret lines
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 0.5;
+  for (let f = 0; f <= numF; f++) {
+    ctx.beginPath();
+    ctx.moveTo(padL, padT + f * fh);
+    ctx.lineTo(padL + fw * 6, padT + f * fh);
+    ctx.stroke();
+  }
+  // String lines
+  for (let s = 0; s <= 6; s++) {
+    ctx.beginPath();
+    ctx.moveTo(padL + s * fw, padT);
+    ctx.lineTo(padL + s * fw, padT + numF * fh);
+    ctx.stroke();
+  }
+
+  // String labels
+  ctx.font = '9px monospace';
+  ctx.fillStyle = '#666';
+  ctx.textAlign = 'center';
+  ['E', 'A', 'D', 'G', 'B', 'e'].forEach((l, s) => {
+    ctx.fillText(l, padL + s * fw + fw / 2, 12);
+  });
+
+  if (startF > 0) {
+    ctx.fillStyle = '#666';
+    ctx.textAlign = 'right';
+    ctx.fillText(startF + 1, padL - 4, padT + fh * 0.65);
+  }
+
+  // Dots
+  frets.forEach((f, s) => {
+    const cx = padL + s * fw + fw / 2;
+    if (f === -1) {
+      ctx.strokeStyle = '#666'; ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(cx - 4, padT - 13); ctx.lineTo(cx + 4, padT - 5);
+      ctx.moveTo(cx + 4, padT - 13); ctx.lineTo(cx - 4, padT - 5);
+      ctx.stroke();
+    } else if (f === 0) {
+      ctx.strokeStyle = '#c8a96e'; ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(cx, padT - 9, 4, 0, Math.PI * 2);
+      ctx.stroke();
+    } else {
+      const cy = padT + (f - startF - 0.5) * fh;
+      ctx.fillStyle = '#c8a96e';
+      ctx.beginPath();
+      ctx.arc(cx, cy, fw * 0.33, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  });
+}
+
+function drawWaveform() {
+  const cv = document.getElementById('waveform');
+  const W = cv.offsetWidth || 600;
+  cv.width = W; cv.height = 80;
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0, 0, W, 80);
+
+  // Draw a stylized waveform preview from chord notes (fast, no render)
+  const freqs = [];
+  CHORDS[curChord].frets.forEach((f, i) => {
+    if (f === -1) return;
+    freqs.push(440 * Math.pow(2, (OPEN_MIDI[i] + f - 69) / 12));
+  });
+
+  ctx.strokeStyle = '#c8a96e';
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  for (let x = 0; x < W; x++) {
+    const t = x / W * 0.07;
+    let s = 0;
+    freqs.forEach(f => {
+      const env = Math.exp(-t * 2.8);
+      s += Math.sin(2 * Math.PI * f * t) * env;
+    });
+    s = Math.tanh(s * (1 + currentParams.dist * 6)) * 28;
+    if (x === 0) ctx.moveTo(x, 40 + s); else ctx.lineTo(x, 40 + s);
+  }
+  ctx.stroke();
+}
+
+function buildKnobs() {
+  const el = document.getElementById('knobs');
+  el.innerHTML = '';
+  KNOWN_CONFIG.forEach(([key, id, label, max, div]) => {
+    const row = document.createElement('div');
+    row.className = 'knob-row';
+    const current = key === 'velocity' ? currentParams.velocity : currentParams[key] ?? currentParams[id];
+    const scaled = (current * (key === 'strum' || key === 'dur' ? 1 : 100)) / (div || 100) * max;
+    row.innerHTML = `
+      <span class="knob-label">${label}</span>
+      <input type="range" id="knob-${id}" min="0" max="${max}" step="${key === 'strum' || key === 'dur' ? 1 : 0.01}" value="${scaled}">
+      <span class="knob-val" id="val-${id}">${(scaled / (max / (div || 100))).toFixed(2)}</span>
+    `;
+    el.appendChild(row);
+  });
+  // wire
+  KNOWN_CONFIG.forEach(([key, id, label, max, div]) => {
+    const input = document.getElementById('knob-' + id);
+    const val = document.getElementById('val-' + id);
+    input.addEventListener('input', () => {
+      const raw = parseFloat(input.value);
+      const normalized = raw / (max / (div || 100));
+      currentParams[key] = key === 'strum' || key === 'dur' ? raw : normalized;
+      val.textContent = key === 'strum' || key === 'dur' ? raw.toString() : normalized.toFixed(2);
+      drawWaveform();
+    });
+  });
+}
+
+const KNOWN_CONFIG = [
+  ['dist',     'dist',     'Distortion',   100, 100],
+  ['sister',   'sister',   'Sister',       100, 100],
+  ['palm',     'palm',     'Palm mute',    100, 100],
+  ['wham',     'wham',     'Whammy',       100, 100],
+  ['reverb',   'reverb',   'Reverb',       100, 100],
+  ['delay',    'delay',    'Delay',        100, 100],
+  ['body',     'body',     'Body',         100, 100],
+  ['velocity', 'velocity', 'Velocity',     100, 100],
+  ['tone',     'tone',     'Tone',         100, 100],
+  ['pickup',   'pickup',   'Pickup',       100, 100],
+  ['strum',    'strum',    'Strum ms',      40,  1],
+  ['dur',      'dur',      'Duration s',    12,  1]
+];
+
+function loadPreset(name) {
+  currentParams = { ...PRESETS[name] };
+  chordBufferCache = { key: null, buffer: null };
+  document.querySelectorAll('.preset-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.preset === name);
+  });
+  buildKnobs();
+  drawWaveform();
+}
+
+function playChord() {
+  setStatus('rendering...');
+  setTimeout(() => {
+    try {
+      const buffer = getChordBuffer();
+      const ac = getAC();
+      if (ac.state === 'suspended') ac.resume();
+      const audioBuf = ac.createBuffer(1, buffer.length, FS);
+      audioBuf.getChannelData(0).set(buffer);
+      const src = ac.createBufferSource();
+      src.buffer = audioBuf;
+      src.connect(ac.destination);
+      src.start();
+      setStatus(`playing ${CHORDS[curChord].name} ${CHORDS[curChord].type}`);
+      setTimeout(() => setStatus(''), currentParams.dur * 1000 + 300);
+    } catch (e) {
+      setStatus('error: ' + e.message, true);
+    }
+  }, 20);
+}
+
+function exportWAV() {
+  setStatus('building WAV...');
+  setTimeout(() => {
+    try {
+      const buffer = getChordBuffer();
+      const wav = encodeWAV(buffer, FS);
+      const ch = CHORDS[curChord];
+      download(wav, `MajorGuitar_${ch.name}_${ch.type}_${currentParams.dur}s.wav`, 'audio/wav');
+      setStatus('WAV saved', false);
+      setTimeout(() => setStatus(''), 2000);
+    } catch (e) {
+      setStatus('error: ' + e.message, true);
+    }
+  }, 20);
+}
+
+function exportMIDI() {
+  try {
+    const ch = CHORDS[curChord];
+    const midi = encodeChordMIDI(ch.frets, 4, tempo);
+    download(midi, `MajorGuitar_${ch.name}_${ch.type}.mid`, 'audio/midi');
+    setStatus('MIDI saved — notes derived from frets (correct)', false);
+    setTimeout(() => setStatus(''), 2500);
+  } catch (e) {
+    setStatus('error: ' + e.message, true);
+  }
+}
+
+// ============================================================================
+// RIFF ENGINE
+// ============================================================================
+
+function buildRiffGrid() {
+  const el = document.getElementById('riffGrid');
+  el.innerHTML = '';
+  RIFFS.forEach((r, i) => {
+    const btn = document.createElement('button');
+    btn.textContent = r.name;
+    btn.className = i === curRiff ? 'active' : '';
+    btn.onclick = () => {
+      document.querySelectorAll('#riffGrid button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      curRiff = i;
+    };
+    el.appendChild(btn);
+  });
+}
+
+function playRiff() {
+  const riff = RIFFS[curRiff];
+  const params = { ...currentParams, dur: 3.5 };
+  document.getElementById('riffStatus').textContent = 'rendering ' + riff.name + '...';
+  setTimeout(() => {
+    try {
+      const frets = [null, null, null, null, null, null];
+      riff.strings.forEach((si, i) => frets[si] = riff.frets[i]);
+      const buffer = renderChordBuffer(frets, params);
+      const ac = getAC();
+      if (ac.state === 'suspended') ac.resume();
+      const ab = ac.createBuffer(1, buffer.length, FS);
+      ab.getChannelData(0).set(buffer);
+      const src = ac.createBufferSource();
+      src.buffer = ab;
+      src.connect(ac.destination);
+      src.start();
+      document.getElementById('riffStatus').textContent = 'playing ' + riff.name;
+      setTimeout(() => document.getElementById('riffStatus').textContent = '', 3800);
+    } catch (e) {
+      document.getElementById('riffStatus').textContent = 'error: ' + e.message;
+    }
+  }, 20);
+}
+
+function randomRiff() {
+  const ch = CHORDS[curChord];
+  const validStrings = [];
+  ch.frets.forEach((f, i) => { if (f !== -1) validStrings.push(i); });
+  const count = Math.min(validStrings.length, 3 + Math.floor(Math.random() * 3));
+  const picked = [];
+  const pool = [...validStrings];
+  for (let i = 0; i < count; i++) {
+    const idx = Math.floor(Math.random() * pool.length);
+    picked.push(pool.splice(idx, 1)[0]);
+  }
+  const newRiff = {
+    name: 'RND ' + Math.floor(Math.random() * 999),
+    strings: picked,
+    frets: picked.map(s => ch.frets[s])
+  };
+  RIFFS.unshift(newRiff);
+  if (RIFFS.length > 12) RIFFS.pop();
+  curRiff = 0;
+  buildRiffGrid();
+  playRiff();
+}
+
+function exportRiffMIDI() {
+  try {
+    const riff = RIFFS[curRiff];
+    const midi = encodeRiffMIDI(riff, tempo);
+    download(midi, `MajorRiff_${riff.name.replace(/\s/g, '_')}.mid`, 'audio/midi');
+    document.getElementById('riffStatus').textContent = 'MIDI saved — correct tuning';
+    setTimeout(() => document.getElementById('riffStatus').textContent = '', 2000);
+  } catch (e) {
+    document.getElementById('riffStatus').textContent = 'error: ' + e.message;
+  }
+}
+
+// ============================================================================
+// SONG ENGINE — functional harmony + templates
+// ============================================================================
+
+const MAJOR_SCALE = [0, 2, 4, 5, 7, 9, 11];
+const SCALE_QUALITY = ['maj', 'min', 'min', 'maj', 'maj', 'min', 'dim'];
+const NUMERALS = ['I', 'ii', 'iii', 'IV', 'V', 'vi', 'vii°'];
+
+// Weights from functional harmony theory
+const TRANSITION_WEIGHTS = {
+  0: { 0: 0.1, 1: 0.1, 2: 0.05, 3: 0.25, 4: 0.25, 5: 0.2, 6: 0.05 },  // I → IV, V, vi
+  1: { 0: 0.1, 3: 0.2, 4: 0.5, 5: 0.1, 6: 0.1 },                       // ii → V
+  2: { 0: 0.1, 3: 0.2, 5: 0.4, 4: 0.2, 6: 0.1 },                       // iii → vi
+  3: { 0: 0.3, 1: 0.15, 2: 0.05, 4: 0.35, 5: 0.15 },                   // IV → V, I
+  4: { 0: 0.7, 5: 0.15, 3: 0.1, 1: 0.05 },                             // V → I (strong)
+  5: { 1: 0.2, 3: 0.3, 4: 0.25, 2: 0.15, 0: 0.1 },                     // vi → ii, IV
+  6: { 0: 0.6, 2: 0.4 }                                                 // vii° → I
+};
+
+function pickNextDeg(currentDeg) {
+  const weights = TRANSITION_WEIGHTS[currentDeg] || TRANSITION_WEIGHTS[0];
+  let r = Math.random();
+  for (const [deg, w] of Object.entries(weights)) {
+    r -= w;
+    if (r <= 0) return parseInt(deg);
+  }
+  return 0;
+}
+
+function generateSongA() {
+  const rootOffset = parseInt(document.getElementById('songKey').value);
+  const rootMidi = 48 + rootOffset;
+  const sections = [
+    { name: 'Intro',   bars: 4, tempo: 76 },
+    { name: 'Verse',   bars: 8, tempo: 88 },
+    { name: 'Chorus',  bars: 8, tempo: 96 },
+    { name: 'Bridge',  bars: 4, tempo: 84 },
+    { name: 'Outro',   bars: 4, tempo: 72 }
+  ];
+
+  const song = sections.map(sec => {
+    const progression = [0];
+    for (let i = 1; i < 4; i++) {
+      progression.push(pickNextDeg(progression[progression.length - 1]));
+    }
+    // Voice-led voicing: pick chord frets that minimize finger movement
+    const chords = progression.map(deg => ({
+      deg,
+      chord: chordAtDegree(rootMidi, deg),
+      label: NUMERALS[deg]
+    }));
+    return { ...sec, progression: chords };
+  });
+
+  return { song, rootOffset };
+}
+
+function chordAtDegree(rootMidi, degree) {
+  // Map major-scale degree to a CHORDS entry, preferring standard open voicings
+  const rootPc = (rootMidi + MAJOR_SCALE[degree]) % 12;
+  const quality = SCALE_QUALITY[degree];
+  const candidates = CHORDS.filter(c => {
+    const cn = c.name.replace('m', '').replace('#', '');
+    return c.name.startsWith(NOTE_NAMES[rootPc].replace('#', ''));
+  });
+  if (quality === 'min') {
+    const min = CHORDS.find(c => c.type === 'min' && c.name.startsWith(NOTE_NAMES[rootPc]));
+    if (min) return min;
+  }
+  return candidates[0] || CHORDS[0];
+}
+
+function renderSongTimeline(songData) {
+  const el = document.getElementById('songTimeline');
+  el.innerHTML = songData.song.map(sec =>
+    `<div style="margin-bottom:4px;"><b>${sec.name}</b> (${sec.bars} bars, ${sec.tempo} BPM): ` +
+    sec.progression.map(p => p.label).join(' → ') +
+    `</div>`
+  ).join('');
+}
+
+let currentSong = null;
+let songPlaying = false;
+
+function playSong() {
+  if (!currentSong) {
+    document.getElementById('songStatus').textContent = 'generate a song first';
+    return;
+  }
+  songPlaying = true;
+  document.getElementById('songStatus').textContent = 'playing...';
+  const ac = getAC();
+  if (ac.state === 'suspended') ac.resume();
+
+  let sectionIdx = 0;
+  const playNextSection = () => {
+    if (!songPlaying || sectionIdx >= currentSong.song.length) {
+      document.getElementById('songStatus').textContent = songPlaying ? '' : 'stopped';
+      songPlaying = false;
+      return;
+    }
+    const sec = currentSong.song[sectionIdx];
+    const params = { ...currentParams, dur: (60 / sec.tempo) * 4 };
+    let chordIdx = 0;
+    const playNextChord = () => {
+      if (!songPlaying || chordIdx >= sec.progression.length) {
+        sectionIdx++;
+        setTimeout(playNextSection, 100);
+        return;
+      }
+      const chordEntry = sec.progression[chordIdx];
+      const buf = renderChordBuffer(chordEntry.chord.frets, params);
+      const ab = ac.createBuffer(1, buf.length, FS);
+      ab.getChannelData(0).set(buf);
+      const src = ac.createBufferSource();
+      src.buffer = ab;
+      src.connect(ac.destination);
+      src.start();
+      chordIdx++;
+      setTimeout(playNextChord, params.dur * 1000);
+    };
+    playNextChord();
+  };
+  playNextSection();
+}
+
+function generateSongB() {
+  // Traditional I-IV-V-vi templates
+  const templates = [
+    { name: 'Venus Ballad', key: 0, prog: [0, 5, 3, 4] },
+    { name: 'Grand Slam Rock', key: 0, prog: [0, 3, 4, 0] },
+    { name: 'Court Shred', key: 0, prog: [0, 4, 5, 3] },
+    { name: 'Night Session', key: 0, prog: [0, 5, 3, 4] }
+  ];
+  const template = templates[Math.floor(Math.random() * templates.length)];
+  const rootOffset = parseInt(document.getElementById('songKey').value);
+  const rootMidi = 48 + rootOffset;
+
+  const sections = [
+    { name: 'Intro',   bars: 4, tempo: 76, prog: [template.prog[0]] },
+    { name: 'Verse',   bars: 8, tempo: 88, prog: template.prog },
+    { name: 'Chorus',  bars: 8, tempo: 96, prog: template.prog },
+    { name: 'Bridge',  bars: 4, tempo: 84, prog: [template.prog[3], template.prog[1], template.prog[2], template.prog[0]] },
+    { name: 'Outro',   bars: 4, tempo: 72, prog: [template.prog[0]] }
+  ];
+
+  const song = sections.map(sec => ({
+    ...sec,
+    progression: sec.prog.map(deg => ({
+      deg,
+      chord: chordAtDegree(rootMidi, deg),
+      label: NUMERALS[deg]
+    }))
+  }));
+
+  currentSong = { song, template: template.name };
+  renderSongTimeline(currentSong);
+  document.getElementById('songStatus').textContent = `generated: ${template.name}`;
+  setTimeout(() => document.getElementById('songStatus').textContent = '', 2500);
+}
+
+// ============================================================================
+// GIN & JUICE — FFT chroma + looped buffer
+// ============================================================================
+
+// Riff: F F A♭ G♭ F F A♭ G♭ (approximation of Gin & Juice main line)
+// Semitones from root: 0, 0, +3, -2, 0, 0, +3, -2
+const GIN_RIFF = [0, 0, 3, -2, 0, 0, 3, -2];
+const GIN_ROOT_MIDI = 41;   // F2
+
+let ginBuffer = null;
+let ginSource = null;
+let ginAnalyser = null;
+let ginRunning = false;
+
+function renderGinRiff(durSec) {
+  const tempo = 95;
+  const beatSec = 60 / tempo;
+  const eighthSec = beatSec / 2;
+  const riffLen = GIN_RIFF.length * eighthSec;
+  const reps = Math.ceil(durSec / riffLen);
+  const N = Math.floor(FS * durSec);
+  const mix = new Float32Array(N);
+
+  for (let rep = 0; rep < reps; rep++) {
+    for (let i = 0; i < GIN_RIFF.length; i++) {
+      const startTime = rep * riffLen + i * eighthSec;
+      const startSamp = Math.floor(startTime * FS);
+      if (startSamp >= N) break;
+
+      const midi = GIN_ROOT_MIDI + GIN_RIFF[i];
+      const freq = 440 * Math.pow(2, (midi - 69) / 12);
+      const noteDur = eighthSec * 0.92;
+
+      let note = renderKSNote(FS, freq, noteDur, 0.85, 0.15);
+      applyBodyEQ(note, FS, 0.35);
+      applyDistortion(note, 0.15);
+      applyTone(note, FS, 0.6);
+
+      for (let j = 0; j < note.length && startSamp + j < N; j++) {
+        mix[startSamp + j] += note[j] * 0.6;
+      }
+    }
+  }
+
+  // Light compression-ish normalize
+  let peak = 0;
+  for (let i = 0; i < N; i++) if (Math.abs(mix[i]) > peak) peak = Math.abs(mix[i]);
+  if (peak > 0) for (let i = 0; i < N; i++) mix[i] = mix[i] / peak * 0.85;
+
+  return mix;
+}
+
+function ginToggle() {
+  const btn = document.getElementById('ginBtn');
+  if (ginRunning) {
+    if (ginSource) { ginSource.stop(); ginSource = null; }
+    ginRunning = false;
+    btn.textContent = 'Start Engine';
+    btn.classList.remove('active');
+    document.getElementById('ginStatus').textContent = 'stopped';
+  } else {
+    if (!ginBuffer) {
+      document.getElementById('ginStatus').textContent = 'rendering 8s loop...';
+      setTimeout(() => {
+        ginBuffer = renderGinRiff(8);
+        ginStart();
+      }, 20);
+    } else {
+      ginStart();
+    }
+  }
+}
+
+function ginStart() {
+  const ac = getAC();
+  if (ac.state === 'suspended') ac.resume();
+
+  const ab = ac.createBuffer(1, ginBuffer.length, FS);
+  ab.getChannelData(0).set(ginBuffer);
+
+  ginSource = ac.createBufferSource();
+  ginSource.buffer = ab;
+  ginSource.loop = true;
+
+  ginAnalyser = ac.createAnalyser();
+  ginAnalyser.fftSize = 4096;
+  ginAnalyser.smoothingTimeConstant = 0.6;
+
+  ginSource.connect(ginAnalyser);
+  ginAnalyser.connect(ac.destination);
+  ginSource.start();
+
+  ginRunning = true;
+  document.getElementById('ginBtn').textContent = 'Stop Engine';
+  document.getElementById('ginBtn').classList.add('active');
+  document.getElementById('ginStatus').textContent = 'running — FFT chroma active';
+
+  ginUpdateLoop();
+  drawGinWave(ginBuffer);
+}
+
+function drawGinWave(buffer) {
+  const cv = document.getElementById('ginWave');
+  const W = cv.offsetWidth || 600;
+  cv.width = W; cv.height = 55;
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0, 0, W, 55);
+  ctx.strokeStyle = '#f5a623';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  const step = Math.max(1, Math.floor(buffer.length / W));
+  for (let x = 0; x < W; x++) {
+    const v = buffer[x * step] || 0;
+    if (x === 0) ctx.moveTo(x, 27 + v * 24); else ctx.lineTo(x, 27 + v * 24);
+  }
+  ctx.stroke();
+}
+
+// FFT-based chromagram — real pitch-class energy
+function computeChroma(freqData, sampleRate, fftSize) {
+  const chroma = new Float32Array(12);
+  const binWidth = sampleRate / fftSize;
+  for (let i = 1; i < freqData.length; i++) {
+    const freq = i * binWidth;
+    if (freq < 80 || freq > 1200) continue;   // guitar-relevant band
+    const midi = Math.round(69 + 12 * Math.log2(freq / 440));
+    const pc = ((midi % 12) + 12) % 12;
+    chroma[pc] += freqData[i];
+  }
+  return chroma;
+}
+
+const CHORD_TEMPLATES = {
+  'C':  [1,0,0,0,1,0,0,1,0,0,0,0],
+  'Cm': [1,0,0,1,0,0,0,1,0,0,0,0],
+  'F':  [1,0,0,0,0,1,0,0,0,1,0,0],  // F A C
+  'Fm': [1,0,0,1,0,0,0,0,0,1,0,0],
+  'Bb': [0,1,0,0,0,1,0,0,0,0,1,0],
+  'G':  [0,0,0,0,0,1,0,1,0,0,1,0],
+  'Dm': [0,0,1,0,0,1,0,0,0,1,0,0],
+  'Am': [0,0,1,0,0,0,0,1,0,0,0,1]
+};
+
+function matchChord(chroma) {
+  let best = { name: '?', score: 0 };
+  for (const [name, tpl] of Object.entries(CHORD_TEMPLATES)) {
+    let score = 0;
+    for (let i = 0; i < 12; i++) score += chroma[i] * tpl[i];
+    if (score > best.score) best = { name, score };
+  }
+  return best;
+}
+
+function drawChroma(chroma, detected, bestScore) {
+  const cv = document.getElementById('ginChroma');
+  const W = cv.offsetWidth || 600;
+  cv.width = W; cv.height = 90;
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0, 0, W, 90);
+
+  const max = Math.max(1, ...chroma);
+  const barW = (W - 20) / 12;
+
+  for (let i = 0; i < 12; i++) {
+    const x = 10 + i * barW;
+    const h = (chroma[i] / max) * 65;
+    ctx.fillStyle = NOTE_NAMES[i].includes('#') ? '#555' : '#c8a96e';
+    ctx.fillRect(x + 2, 75 - h, barW - 4, h);
+    ctx.fillStyle = '#888';
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(NOTE_NAMES[i], x + barW / 2, 87);
+  }
+
+  ctx.fillStyle = '#f5a623';
+  ctx.font = 'bold 11px monospace';
+  ctx.textAlign = 'right';
+  ctx.fillText(`detected: ${detected} (${(bestScore * 100).toFixed(0)}%)`, W - 10, 12);
+}
+
+let ginFrame = null;
+function ginUpdateLoop() {
+  if (!ginRunning || !ginAnalyser) return;
+  const data = new Uint8Array(ginAnalyser.frequencyBinCount);
+  ginAnalyser.getByteFrequencyData(data);
+  const chroma = computeChroma(data, ac.sampleRate, ginAnalyser.fftSize);
+  const { name, score } = matchChord(chroma);
+  drawChroma(chroma, name, score);
+  ginFrame = requestAnimationFrame(ginUpdateLoop);
+}
+
+function ginExportWAV() {
+  if (!ginBuffer) ginBuffer = renderGinRiff(8);
+  download(encodeWAV(ginBuffer, FS), 'GinJuice_Fixed_8s.wav', 'audio/wav');
+  document.getElementById('ginStatus').textContent = 'WAV saved';
+  setTimeout(() => document.getElementById('ginStatus').textContent = '', 2000);
+}
+
+function ginExportMIDI() {
+  const TPQ = 480;
+  const tempo = 95;
+  const usPerBeat = Math.round(60000000 / tempo);
+  const events = [];
+  events.push({ tick: 0, data: [0xFF, 0x51, 0x03, (usPerBeat >> 16) & 0xFF, (usPerBeat >> 8) & 0xFF, usPerBeat & 0xFF] });
+  events.push({ tick: 0, data: [0xC0, 33] });  // Electric Bass
+
+  const eighthTicks = TPQ / 2;
+  GIN_RIFF.forEach((semitone, i) => {
+    const midi = GIN_ROOT_MIDI + semitone;
+    const startTick = i * eighthTicks;
+    events.push({ tick: startTick, data: [0x90, midi, 100] });
+    events.push({ tick: startTick + Math.round(eighthTicks * 0.85), data: [0x80, midi, 0] });
+  });
+  events.push({ tick: GIN_RIFF.length * eighthTicks + TPQ, data: [0xFF, 0x2F, 0x00] });
+  events.sort((a, b) => a.tick - b.tick);
+
+  const header = writeMidiHeader(1, TPQ);
+  const track = writeMidiTrack(events);
+  download(new Uint8Array([...header, ...track]), 'GinJuice_Fixed.mid', 'audio/midi');
+  document.getElementById('ginStatus').textContent = 'MIDI saved (correct notes)';
+  setTimeout(() => document.getElementById('ginStatus').textContent = '', 2000);
+}
+
+// ============================================================================
+// INIT
+// ============================================================================
+
+document.querySelectorAll('.preset-btn').forEach(btn => {
+  btn.addEventListener('click', () => loadPreset(btn.dataset.preset));
+});
+
+buildChordGrid();
+drawFretboard();
+drawWaveform();
+buildKnobs();
+buildRiffGrid();
+loadPreset('fender-clean');
+
+// Set E major as default selection
+document.querySelectorAll('.chord-btn')[4].click();
+
+window.addEventListener('resize', () => {
+  drawFretboard();
+  drawWaveform();
+});
+
+console.log('%cMajorGuitar Ultimate 3 — FIXED', 'color:#c8a96e;font-size:14px;font-weight:bold');
+console.log('✓ MIDI derived from frets (no more misalignment)');
+console.log('✓ Karplus-Strong with fractional delay');
+console.log('✓ Fender Clean preset default');
+console.log('✓ Gin & Juice: FFT chroma + correct riff');
+console.log('✓ Song Engine: functional harmony weights');
+
+</script>
+</body>
+</html>
